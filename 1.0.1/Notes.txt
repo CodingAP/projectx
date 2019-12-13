@@ -1,0 +1,11 @@
+Accidentally deleted the first version, so here is the updated version
+
+Features - 
+	Player that can shoot bullets and can take damage (can't die yet)
+	Camera that follows the player smoothly
+	World with a checkboard-like grass and is 5000x5000
+	Enemies and an Enemy Spawner. Enemies will not cluster together and will follow the player
+	Health for both the enemies and player, only enemies can die
+
+Known Bugs -
+	Nothing blocking the world edges, so just white everywhere

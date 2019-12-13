@@ -1,0 +1,12 @@
+Features - 
+	Players and enemies are randomly spawned in the world
+	Enemies now follow only when close to the player
+	When they are not following, they roam randomly
+	Camera now stops at world borders
+	Pausing can now happen
+	Minimap is now shown where player was on the UI part
+    Can have gun or sword switch with 1 or 2
+	Leveling up
+
+Known Bugs -
+    

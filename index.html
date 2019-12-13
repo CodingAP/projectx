@@ -1,0 +1,22 @@
+<html>
+
+<head>
+    <title>Loading Project X</title>
+</head>
+
+<body>
+    <script>
+        fetch('./config.json')
+            .then(response => {
+                return response.json();
+            })
+            .then(json => {
+                window.location.href = `./${json.version}/index.html`;
+            })
+            .catch(() => {
+                console.error(`Couldn't load config.json`);
+            })
+    </script>
+</body>
+
+</html>
