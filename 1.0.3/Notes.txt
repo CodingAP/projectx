@@ -1,0 +1,8 @@
+Features - 
+	UI has a huge overhaul
+    Main Menu
+    Game states
+
+Known Bugs -
+    UI is not finished
+    Version info is not showing

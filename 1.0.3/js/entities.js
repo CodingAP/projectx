@@ -209,14 +209,9 @@ class Player {
         }
     }
 
-    followMouse() {
-        let x = playBounds.offset.x * canvas.width;
-        let y = playBounds.offset.y * canvas.height;
-        let width = playBounds.width * canvas.width;
-        let height = playBounds.height * canvas.height;
-
+    followMouse(camera, gameplayUI) {
         let offset = camera.position.clone().subtract(this.position);
-        let translatedPosition = new Vector2D(x + (width / 2), y + (height / 2)).subtract(offset);
+        let translatedPosition = new Vector2D(gameplayUI.position.x + (gameplayUI.width / 2), gameplayUI.position.y + (gameplayUI.height / 2)).subtract(offset);
         this.angle = Math.atan2(mouseY - translatedPosition.y, mouseX - translatedPosition.x) + Math.HALF_PI;
     }
 
@@ -358,7 +353,7 @@ class EnemyManager {
                 let newLocation = this.enemySpawners[i].position.clone();
                 newLocation.add(new Vector2D().random(100));
                 let newEnemy = new Enemy(newLocation);
-                playerUI.minimap.addObject(newEnemy);
+                //playerUI.minimap.addObject(newEnemy);
                 this.enemies.push(newEnemy);
                 this.enemySpawners[i].shouldSpawn = false;
             } else if (this.enemySpawners[i].finished) {
@@ -384,7 +379,7 @@ class EnemyManager {
             }
             this.enemies[i].update();
             if (this.enemies[i].dead) {
-                playerUI.minimap.removeObject(this.enemies[i])
+                //playerUI.minimap.removeObject(this.enemies[i])
                 this.enemies.splice(i, 1);
                 entity.xpBar.changeValue(1);
             }
