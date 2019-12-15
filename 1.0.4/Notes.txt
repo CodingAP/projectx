@@ -1,0 +1,7 @@
+Features - 
+	Combat is much better
+    Upgrades for leveling up
+    Powers for leveling up (Supersize, Troops)
+
+Known Bugs -
+    UI is not finished
