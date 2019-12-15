@@ -17,7 +17,8 @@ class Player {
         this.stateEnum = {
             NOTHING: 0,
             DAZED: 1,
-            MELEE: 2
+            MELEE: 2,
+            DYING: 3
         }
 
         this.weaponEnum = {
@@ -25,8 +26,12 @@ class Player {
             SWORD: 1
         }
 
+        this.bulletDamage = 15;
+        this.meleeDamage = 30;
+        this.defense = 1;
+
         this.state = this.stateEnum.NOTHING;
-        this.weapon = this.weaponEnum.SWORD;
+        this.weapon = this.weaponEnum.GUN;
 
         this.meleeDuration = 10;
         this.meleeCurrent = 0;
@@ -35,6 +40,7 @@ class Player {
         this.swordSwing = false;
 
         this.dead = false;
+        this.lifespan = 20;
 
         this.healthBar = new StatusBar(0, 100);
         this.healthBar.current = 100;
@@ -90,7 +96,11 @@ class Player {
 
     reset() {
         this.position = new Vector2D(Math.randomInt(mapBounds.x, mapBounds.x + mapBounds.width), Math.randomInt(mapBounds.y, mapBounds.y + mapBounds.height));
+        this.keys = { w: 0, a: 0, s: 0, d: 0, 1: 0, 2: 0 };
+        this.mice = [0, 0, 0, 0, 0];
+        this.sword.setHeight(0);
         this.dead = false;
+        this.lifespan = 20;
         this.healthBar.current = 100;
         this.manaBar.current = 50;
         this.xpBar.current = 0;
@@ -106,7 +116,7 @@ class Player {
 
         let position = this.position;
 
-        context.fillStyle = '#fff';
+        context.fillStyle = 'rgba(255, 255, 255, ' + Math.map(this.lifespan, 0, 20, 0, 1) + ')';
 
         context.save();
         context.translate(position.x, position.y);
@@ -136,6 +146,7 @@ class Player {
     }
 
     update() {
+        if (this.healthBar.current == 0) this.state = this.stateEnum.DYING;
         switch (this.state) {
             case this.stateEnum.MELEE:
                 this.meleeCurrent++;
@@ -164,9 +175,11 @@ class Player {
                     this.state = (this.meleeCurrent != 0) ? this.stateEnum.MELEE : this.stateEnum.NOTHING;
                 }
                 break;
+            case this.stateEnum.DYING:
+                this.lifespan--;
+                if (this.lifespan <= 0) this.dead = true;
+                break;
         }
-
-        this.dead = (this.healthBar.current == 0);
 
         this.healthBar.changeValue(0.2);
         this.manaBar.changeValue(0.1);
@@ -225,7 +238,7 @@ class Player {
                 knockPosition.add(enemyVelocity);
                 knockPosition.clamp(mapBounds.x, mapBounds.x + mapBounds.width, mapBounds.y, mapBounds.y + mapBounds.height);
                 this.knockback.set(knockPosition);
-                this.healthBar.changeValue(-20);
+                this.healthBar.changeValue(-enemyManager.enemies[i].damage * this.defense);
 
                 this.state = this.stateEnum.DAZED;
 
@@ -248,14 +261,13 @@ class Player {
 
                 enemyManager.enemies[i].state = enemyManager.enemies[i].stateEnum.DAZED;
 
-                enemyManager.enemies[i].health.changeValue(-30);
+                enemyManager.enemies[i].health.changeValue(-this.meleeDamage * enemyManager.enemies[i].defense);
             }
 
             for (let j = this.bullets.length - 1; j >= 0; j--) {
                 if (this.bullets[j].colliderBox.collideWith(enemyManager.enemies[i].colliderBox)) {
                     this.bullets.splice(j, 1);
 
-                    //Collide
                     let knockPosition = enemyManager.enemies[i].position.clone();
                     let enemyVelocity = enemyManager.enemies[i].velocity.clone();
                     enemyVelocity.setMagnitude(40).reverse();
@@ -263,9 +275,10 @@ class Player {
                     knockPosition.clamp(mapBounds.x, mapBounds.x + mapBounds.width, mapBounds.y, mapBounds.y + mapBounds.height);
                     enemyManager.enemies[i].knockback.set(knockPosition);
 
+                    enemyManager.enemies[i].seen = true;
                     enemyManager.enemies[i].state = enemyManager.enemies[i].stateEnum.DAZED;
 
-                    enemyManager.enemies[i].health.changeValue(-20);
+                    enemyManager.enemies[i].health.changeValue(-this.bulletDamage * enemyManager.enemies[i].defense);
                 }
             }
         }
@@ -340,6 +353,14 @@ class EnemyManager {
         this.maxEnemies = 100;
     }
 
+    reset() {
+        this.enemySpawners = [];
+        for (let i = 0; i < 3; i++) {
+            this.enemySpawners.push(new EnemySpawner(new Vector2D(Math.randomInt(mapBounds.x, mapBounds.x + mapBounds.width), Math.randomInt(mapBounds.y, mapBounds.y + mapBounds.height)), 2, 10))
+        }
+        this.enemies = [];
+    }
+
     show() {
         for (let i = 0; i < this.enemies.length; i++) {
             this.enemies[i].show();
@@ -349,23 +370,24 @@ class EnemyManager {
     update(entity) {
         for (let i = this.enemySpawners.length - 1; i >= 0; i--) {
             this.enemySpawners[i].update();
-            if (this.enemySpawners[i].shouldSpawn) {
-                let newLocation = this.enemySpawners[i].position.clone();
-                newLocation.add(new Vector2D().random(100));
-                let newEnemy = new Enemy(newLocation);
-                //playerUI.minimap.addObject(newEnemy);
-                this.enemies.push(newEnemy);
-                this.enemySpawners[i].shouldSpawn = false;
-            } else if (this.enemySpawners[i].finished) {
-                this.enemySpawners[i] = new EnemySpawner(new Vector2D(Math.randomInt(mapBounds.x, mapBounds.x + mapBounds.width), Math.randomInt(mapBounds.y, mapBounds.y + mapBounds.height)), 2, 10);
+            if (this.enemies.length < this.maxEnemies) {
+                if (this.enemySpawners[i].shouldSpawn) {
+                    let newLocation = this.enemySpawners[i].position.clone();
+                    newLocation.add(new Vector2D().random(100)).clamp(mapBounds.x, mapBounds.x + mapBounds.width, mapBounds.y, mapBounds.y + mapBounds.height);
+                    let newEnemy = new Enemy(newLocation);
+                    this.enemies.push(newEnemy);
+                    this.enemySpawners[i].shouldSpawn = false;
+                } else if (this.enemySpawners[i].finished) {
+                    this.enemySpawners[i] = new EnemySpawner(new Vector2D(Math.randomInt(mapBounds.x, mapBounds.x + mapBounds.width), Math.randomInt(mapBounds.y, mapBounds.y + mapBounds.height)), 2, 10);
+                }
             }
         }
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
+            this.enemies[i].update();
             if (entity.dead) {
                 this.enemies[i].state = this.enemies[i].stateEnum.PEACEFUL;
                 this.enemies[i].seen = false;
-                this.enemies[i].update();
                 continue;
             }
             if (this.enemies[i].position.distance(entity.position) < 500 && !this.enemies[i].seen) {
@@ -377,9 +399,7 @@ class EnemyManager {
             } else {
                 this.enemies[i].state = this.enemies[i].stateEnum.PEACEFUL;
             }
-            this.enemies[i].update();
             if (this.enemies[i].dead) {
-                //playerUI.minimap.removeObject(this.enemies[i])
                 this.enemies.splice(i, 1);
                 entity.xpBar.changeValue(1);
             }
@@ -424,8 +444,13 @@ class Enemy {
         this.stateEnum = {
             FOLLOWING: 0,
             DAZED: 1,
-            PEACEFUL: 2
+            PEACEFUL: 2,
+            DYING: 3
         }
+
+        this.damage = 20;
+
+        this.defense = 1;
 
         this.colliderBox = new CircleCollider(this.position.x, this.position.y, this.size);
 
@@ -437,17 +462,22 @@ class Enemy {
         this.state = this.stateEnum.FOLLOWING;
 
         this.knockback = new Vector2D();
-        this.randomPlace = this.position.clone().add(new Vector2D().random(mapBounds.width / 20));
-        while (this.randomPlace.x > mapBounds.x + mapBounds.width || this.randomPlace.x < mapBounds.x || this.randomPlace.y > mapBounds.y + mapBounds.height || this.randomPlace.y < mapBounds.y) {
-            this.randomPlace = this.position.clone().add(new Vector2D().random(mapBounds.width / 20));
-        }
+        this.chooseRoamPlace();
 
         this.dead = false;
+        this.lifespan = 20;
         this.seen = false;
     }
 
+    chooseRoamPlace() {
+        this.randomPlace = this.position.clone().add(new Vector2D().random(50));
+        while (this.randomPlace.x > mapBounds.x + mapBounds.width || this.randomPlace.x < mapBounds.x || this.randomPlace.y > mapBounds.y + mapBounds.height || this.randomPlace.y < mapBounds.y) {
+            this.randomPlace = this.position.clone().add(new Vector2D().random(50));
+        }
+    }
+
     show() {
-        context.fillStyle = '#f00';
+        context.fillStyle = 'rgba(255, 0, 0, ' + Math.map(this.lifespan, 0, 20, 0, 1) + ')';
         context.beginPath();
         context.ellipse(this.position.x, this.position.y, this.size, this.size, 0, 0, Math.TWO_PI);
         context.closePath();
@@ -455,7 +485,7 @@ class Enemy {
     }
 
     update() {
-        if (this.health.current <= 0) this.dead = true;
+        if (this.health.current <= 0) this.state = this.stateEnum.DYING;
         switch (this.state) {
             case this.stateEnum.FOLLOWING:
                 this.position.add(this.velocity);
@@ -467,10 +497,12 @@ class Enemy {
             case this.stateEnum.PEACEFUL:
                 this.position.lerp(this.randomPlace, 0.01);
                 if (this.position.distance(this.randomPlace) < 1) {
-                    while (this.randomPlace.x > mapBounds.x + mapBounds.width || this.randomPlace.x < mapBounds.x || this.randomPlace.y > mapBounds.y + mapBounds.height || this.randomPlace.y < mapBounds.y) {
-                        this.randomPlace = this.position.clone().add(new Vector2D().random(mapBounds.width / 20));
-                    }
+                    this.chooseRoamPlace();
                 }
+                break;
+            case this.stateEnum.DYING:
+                this.lifespan--;
+                if (this.lifespan <= 0) this.dead = true;
                 break;
         }
         this.colliderBox.setPosition(this.position.x, this.position.y);

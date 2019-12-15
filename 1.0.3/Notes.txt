@@ -1,8 +1,9 @@
 Features - 
 	UI has a huge overhaul
-    Main Menu
-    Game states
+    Main Menu with play button and cool background
+    Game states for all states (pause, dead, main menu, nebraska)
+    All entities fade when dead
+    Damage and Defense are implemented
 
 Known Bugs -
     UI is not finished
-    Version info is not showing

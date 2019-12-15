@@ -12,7 +12,7 @@ window.onload = () => {
     setInterval(() => {
         frameRate = frames;
         frames = 0;
-    }, 1000)
+    }, 1000);
     addListeners();
     initalize();
     loop();
@@ -57,10 +57,12 @@ let initalize = () => {
     mainMenuState = new MainMenuState();
     gameState = new GameplayState();
     pausedState = new PausedState();
+    deadState = new DeadState();
     gameManager.setState(mainMenuState);
 }
 
 let loop = () => {
+    frames++;
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     gameManager.update();
